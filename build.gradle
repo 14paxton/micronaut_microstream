@@ -1,0 +1,79 @@
+plugins {
+    id("groovy")
+    id("com.github.johnrengelman.shadow") version "7.1.2"
+    id("io.micronaut.application") version "3.6.3"
+    id("io.micronaut.test-resources") version "3.6.0"
+    id 'org.graalvm.buildtools.native' version '0.9.13'
+}
+
+version = "0.1"
+group = "com.ssi"
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    compileOnly 'org.projectlombok:lombok:1.18.24'
+    annotationProcessor 'org.projectlombok:lombok:1.18.24'
+    testCompileOnly 'org.projectlombok:lombok:1.18.24'
+    testAnnotationProcessor 'org.projectlombok:lombok:1.18.24'
+    annotationProcessor("io.micronaut:micronaut-graal")
+    annotationProcessor("io.micronaut.data:micronaut-data-processor")
+    annotationProcessor("io.micronaut:micronaut-http-validation")
+    annotationProcessor("io.micronaut.microstream:micronaut-microstream-annotations")
+    implementation("io.micronaut.microstream:micronaut-microstream-annotations")
+    implementation("io.micronaut.microstream:micronaut-microstream")
+    implementation("io.micronaut:micronaut-http-client")
+    runtimeOnly("ch.qos.logback:logback-classic")
+    implementation("io.micronaut:micronaut-validation")
+    annotationProcessor("io.micronaut.data:micronaut-data-processor")
+    implementation("io.micronaut.data:micronaut-data-jdbc")
+    developmentOnly("io.micronaut.microstream:micronaut-microstream-rest")
+    implementation("io.micronaut.serde:micronaut-serde-jackson")
+    compileOnly("org.graalvm.nativeimage:svm")
+    compileOnly("com.google.code.findbugs:jsr305")
+
+    testImplementation "io.micronaut.test:micronaut-test-spock"
+    testImplementation("org.spockframework:spock-core") {
+        exclude group: "org.codehaus.groovy", module: "groovy-all"
+    }
+}
+
+//setting to run in dev
+run {
+    systemProperty('micronaut.environments', 'dev')
+
+}
+
+application {
+    mainClass.set("com.ssi.Application")
+}
+java {
+    sourceCompatibility = JavaVersion.toVersion("17")
+    targetCompatibility = JavaVersion.toVersion("17")
+}
+
+graalvmNative {
+    toolchainDetection = false
+
+    binaries {
+        main {
+            javaLauncher = javaToolchains.launcherFor {
+                languageVersion = JavaLanguageVersion.of(17)
+                vendor = JvmVendorSpec.matching("GraalVM Community")
+            }
+            imageName.set('graal-vm-ssi')
+            buildArgs.add('--verbose')
+        }
+    }
+}
+
+micronaut {
+    runtime("netty")
+    testRuntime("spock2")
+    processing {
+        incremental(true)
+        annotations("com.ssi.*")
+    }
+}
